@@ -359,7 +359,7 @@
                             <option value="ไวรัสวิทยา(VI)">ไวรัสวิทยา(VI)</option>
                             <option value="ไรวัสวิทยาทางสัตว์ปีก(AI)">ไรวัสวิทยาทางสัตว์ปีก(AI)</option>
                         </select>
-                        <input type="text" id="wd-search" onkeyup="renderWithdrawCards()" placeholder="ค้นหาชื่อสารเคมี..." class="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none">
+                        <input type="text" id="wd-search" onkeyup="renderWithdrawCards()" placeholder="ค้นหาชื่อสารเคมี หรือ รหัสขวด..." class="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none">
                     </div>
 
                     <!-- รายการสารเคมีจัดกลุ่มตามชื่อ -->
@@ -467,26 +467,29 @@
 
             <!-- Mobile Bottom Nav -->
             <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex justify-around p-2 z-20 pb-safe shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+                <!-- 1. รายการ -->
                 <button onclick="navTo('dashboard')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-dashboard">
                     <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
                     <span class="text-[10px] font-medium">รายการ</span>
                 </button>
+                <!-- 2. เบิกใช้ -->
+                <button onclick="navTo('withdraw')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-withdraw">
+                    <i class="fa-solid fa-flask text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">เบิกใช้</span>
+                </button>
+                <!-- 3. เพิ่มใหม่ (อยู่ตรงกลาง) -->
                 <button onclick="navTo('add')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition relative top-[-10px]" id="mob-nav-add">
                     <div class="bg-orange-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg mb-1 border-4 border-white">
                         <i class="fa-solid fa-plus text-xl"></i>
                     </div>
                     <span class="text-[10px] font-medium text-orange-500">เพิ่มใหม่</span>
                 </button>
-                <button onclick="navTo('withdraw')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-withdraw">
-                    <i class="fa-solid fa-flask text-xl mb-1"></i>
-                    <span class="text-[10px] font-medium">เบิกใช้</span>
-                </button>
-                <!-- ปุ่ม Mobile Nav ประวัติการทำรายการ -->
+                <!-- 4. ประวัติ -->
                 <button onclick="navTo('history')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-history">
                     <i class="fa-solid fa-clock-rotate-left text-xl mb-1"></i>
                     <span class="text-[10px] font-medium">ประวัติ</span>
                 </button>
-                <!-- ปุ่ม Mobile Nav สารเคมีที่หมดแล้ว -->
+                <!-- 5. หมดแล้ว -->
                 <button onclick="navTo('depleted')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-depleted">
                     <i class="fa-solid fa-box-archive text-xl mb-1"></i>
                     <span class="text-[10px] font-medium">หมดแล้ว</span>
@@ -598,7 +601,7 @@
             </div>
             <div id="reader" class="w-full"></div>
             <div class="p-4 text-center text-sm text-slate-500 bg-slate-50">
-                หันกล้องไปยัง QR Code บนขวดสารเคารมี
+                หันกล้องไปยัง QR Code บนขวดสารเคมี
             </div>
         </div>
     </div>
@@ -1326,7 +1329,7 @@
             }
         });
 
-        // --- Withdraw System ---
+        // --- Withdraw System (แก้ไขให้ค้นหาได้ทั้งชื่อและรหัสขวด) ---
         window.renderWithdrawCards = () => {
             const container = document.getElementById('withdraw-cards-container');
             const searchVal = document.getElementById('wd-search').value.toLowerCase();
@@ -1336,7 +1339,8 @@
             groupedChemicals = {}; 
 
             chemicalsData.forEach(chem => {
-                const matchSearch = chem.name.toLowerCase().includes(searchVal);
+                // อัปเดตบรรทัดนี้: ให้ค้นหาจากชื่อ หรือ จากรหัสขวดก็ได้
+                const matchSearch = chem.name.toLowerCase().includes(searchVal) || chem.bottleNo.toLowerCase().includes(searchVal);
                 const matchLab = labFilter === "" || chem.lab === labFilter;
                 
                 if(matchSearch && matchLab && chem.remained > 0) {
