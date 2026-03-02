@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BonDTrack - Lab Chemical Management</title>
+    
+    <!-- --- ส่วนของ CSS (Libraries) --- -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- SheetJS สำหรับ Export Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- QRCode.js สำหรับสร้าง QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- html2canvas สำหรับดาวน์โหลดรูปภาพ QR Code พร้อมข้อความทั้งหมด -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- --- ส่วนของ CSS (Custom Styles) --- -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+        }
+        
+        /* ซ่อน Element */
+        .hidden-view {
+            display: none !important;
+        }
+
+        /* Sidebar Transition */
+        #sidebar {
+            transition: width 0.3s ease, transform 0.3s ease;
+        }
+        .sidebar-collapsed {
+            width: 0 !important;
+            overflow: hidden;
+            padding: 0 !important;
+            opacity: 0;
+        }
+
+        /* สำหรับการ Print QR Code เท่านั้น */
+        @media print {
+            body * { visibility: hidden; }
+            #print-qr-section, #print-qr-section * { visibility: visible; }
+            #print-qr-section {
+                position: absolute; left: 0; top: 0; width: 100%;
+                display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 2rem;
+            }
+            .no-print { display: none !important; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen overflow-hidden flex flex-col">
+
+    <!-- ========================================== -->
+    <!-- --- ส่วนของ HTML (หน้า Login) --- -->
+    <!-- ========================================== -->
+    <div id="login-page" class="flex h-screen w-full bg-white relative z-50">
+        <!-- ด้านซ้าย: กราฟิกโลโก้ (แสดงเฉพาะบนจอใหญ่) -->
+        <div class="hidden md:flex md:w-1/2 bg-sky-50 justify-center items-center flex-col p-10 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <div class="z-10 text-center flex flex-col items-center">
+                <!-- โลโก้ใหม่ตามลิงก์ -->
+                <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-48 mb-6 object-contain rounded-xl shadow-md border-2 border-white">
+                <h1 class="text-6xl font-bold tracking-tight mb-2 text-slate-800">Bon<span class="text-orange-500">DTrack</span></h1>
+                <p class="text-xl text-slate-500 font-light mt-4">Professional Lab Chemical Management System</p>
+            </div>
+        </div>
+        
+        <!-- ด้านขวา: ฟอร์ม Login -->
+        <div class="w-full md:w-1/2 flex justify-center items-center p-8 bg-white border-l border-slate-100">
+            <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.05)] border border-slate-100">
+                <div class="md:hidden text-center mb-8 flex flex-col items-center">
+                    <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-32 mb-4 object-contain rounded-lg">
+                    <h1 class="text-4xl font-bold tracking-tight text-slate-900">Bon<span class="text-orange-500">DTrack</span></h1>
+                </div>
+                <h2 class="text-2xl font-semibold mb-6 text-slate-800">เข้าสู่ระบบ</h2>
+                <form id="login-form" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">อีเมล (Email)</label>
+                        <input type="email" id="login-email" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition" placeholder="admin@bondtrack.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">รหัสผ่าน (Password)</label>
+                        <input type="password" id="login-password" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition" placeholder="••••••••">
+                    </div>
+                    <button type="submit" id="btn-login" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-lg transition shadow-lg shadow-orange-500/30 flex justify-center items-center">
+                        <span>เข้าสู่ระบบ</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- --- ส่วนของ HTML (โครงสร้างหลักของ App) --- -->
+    <!-- ========================================== -->
+    <div id="main-app" class="hidden-view flex h-screen w-full bg-slate-50">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="flex flex-col w-64 bg-slate-800 text-slate-300 border-r border-slate-700 z-30 fixed md:relative h-full sidebar-collapsed md:sidebar-open">
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700 bg-slate-900">
+                <h1 class="text-2xl font-bold text-white">Bon<span class="text-orange-500">DTrack</span></h1>
+                <button class="md:hidden text-slate-400 hover:text-white" onclick="toggleSidebar()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+                <a href="#" onclick="navTo('dashboard')" id="nav-dashboard" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white group transition">
+                    <i class="fa-solid fa-chart-pie w-6"></i>
+                    <span>รายการสารเคมี</span>
+                </a>
+                <a href="#" onclick="navTo('add')" id="nav-add" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white group transition">
+                    <i class="fa-solid fa-plus-circle w-6"></i>
+                    <span>เพิ่มสารเคมีใหม่</span>
+                </a>
+                <a href="#" onclick="navTo('withdraw')" id="nav-withdraw" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white group transition">
+                    <i class="fa-solid fa-flask w-6"></i>
+                    <span>เบิกใช้ / ตัดสต๊อก</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-slate-700">
+                <div class="flex items-center gap-3 mb-4 px-2">
+                    <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold" id="user-avatar">U</div>
+                    <div class="text-sm truncate w-full" id="user-email-display">user@email.com</div>
+                </div>
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-red-500 hover:text-white text-slate-300 rounded-lg transition shadow">
+                    <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+                </button>
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-slate-900/50 z-20 md:hidden backdrop-blur-sm"></div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+            
+            <!-- Header -->
+            <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 md:px-6 z-10 border-b border-sky-100">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="text-slate-500 hover:text-orange-500 p-2 rounded-lg hover:bg-sky-50 transition">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold text-slate-800 md:hidden">Bon<span class="text-orange-500">DTrack</span></h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-sky-700 hidden sm:block px-3 py-1 bg-sky-50 rounded-full border border-sky-100">Lab Chemical System</span>
+                </div>
+            </header>
+
+            <!-- Content Views -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 bg-sky-50/30" id="content-container">
+                
+                <!-- 1. Dashboard View -->
+                <div id="view-dashboard" class="view-section">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">รายการสารเคมีทั้งหมด</h2>
+                            <p class="text-sm text-slate-500">ตรวจสอบสถานะ วันหมดอายุ และจัดการสารเคมี</p>
+                        </div>
+                        <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+
+                    <!-- Filters & Search Bar -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-sky-100 mb-6 flex flex-col md:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="search-input" onkeyup="renderTable()" placeholder="ค้นหาชื่อสารเคมี, Bottle No., CAS No..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-orange-500 outline-none">
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <select id="filter-hazard" onchange="renderTable()" class="flex-1 md:w-40 px-3 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none text-sm">
+                                <option value="">ทุก Hazard Rating</option>
+                                <option value="Flamable">Flamable</option>
+                                <option value="Oxidizing">Oxidizing</option>
+                                <option value="Explosive">Explosive</option>
+                                <option value="Corrosive">Corrosive</option>
+                                <option value="CompressGas">CompressGas</option>
+                                <option value="Toxic">Toxic</option>
+                                <option value="Harmful">Harmful</option>
+                                <option value="EnvironHazard">EnvironHazard</option>
+                                <option value="HealthHazard">HealthHazard</option>
+                            </select>
+                            <select id="filter-lab" onchange="renderTable()" class="flex-1 md:w-40 px-3 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none text-sm">
+                                <option value="">ทุก Lab</option>
+                                <option value="ปรสิตวิทยา(PA)">ปรสิตวิทยา(PA)</option>
+                                <option value="ไวรัสวิทยา(VI)">ไวรัสวิทยา(VI)</option>
+                                <option value="ไรวัสวิทยาทางสัตว์ปีก(AI)">ไรวัสวิทยาทางสัตว์ปีก(AI)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead>
+                                    <tr class="bg-sky-50 border-b border-sky-100 text-sky-800 text-sm">
+                                        <th class="p-4 font-semibold">Bottle No.</th>
+                                        <th class="p-4 font-semibold">Chemical Name</th>
+                                        <th class="p-4 font-semibold">Lab</th>
+                                        <th class="p-4 font-semibold">ปริมาตร (คงเหลือ/รวม)</th>
+                                        <th class="p-4 font-semibold">สถานะ</th>
+                                        <th class="p-4 font-semibold">วันหมดอายุ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="chemical-table-body" class="divide-y divide-slate-100">
+                                    <!-- Rows will be rendered here by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="empty-state" class="hidden-view py-12 text-center text-slate-500">
+                            <i class="fa-solid fa-flask text-4xl mb-3 text-sky-200"></i>
+                            <p>ไม่พบข้อมูลสารเคมีที่ตรงกับเงื่อนไข</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Add Chemical View -->
+                <div id="view-add" class="view-section hidden-view max-w-4xl mx-auto">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">เพิ่มข้อมูลสารเคมีใหม่</h2>
+                    <p class="text-sm text-slate-500 mb-6">กรอกข้อมูลรายละเอียดสารเคมีให้ครบถ้วนเพื่อบันทึกลงระบบ</p>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-6 md:p-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-bl-full -z-10"></div>
+                        
+                        <form id="form-add-chemical" class="space-y-6 relative z-10">
+                            <!-- Section 1: ข้อมูลหลัก -->
+                            <h3 class="text-lg font-semibold text-sky-800 border-b border-sky-100 pb-2 flex items-center gap-2"><i class="fa-solid fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Bottle No.</label><input type="text" id="add-bottleNo" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Chemical Name</label><input type="text" id="add-name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">CAS No.</label><input type="text" id="add-casNo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">CAT No.</label><input type="text" id="add-catNo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Supplier / ผู้จัดจำหน่าย</label><input type="text" id="add-supplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Status (สถานะเริ่มแรก)</label>
+                                    <select id="add-status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                                        <option value="Available">Available (พร้อมใช้งาน)</option>
+                                        <option value="Low Stock">Low Stock (ใกล้หมด)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Section 2: ปริมาณ & อื่นๆ -->
+                            <h3 class="text-lg font-semibold text-sky-800 border-b border-sky-100 pb-2 pt-4 flex items-center gap-2"><i class="fa-solid fa-weight-scale"></i> ปริมาณและสถานที่</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Amount (จำนวนขวด)</label><input type="number" id="add-amount" value="1" min="1" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Volume (ปริมาตรรวมสุทธิ)</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" id="add-volume" step="0.01" required class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="ปริมาตรตอนรับเข้า (เช่น 500)">
+                                        <select id="add-unit" class="w-24 px-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50 text-slate-700 font-medium">
+                                            <option value="mL.">mL.</option>
+                                            <option value="L.">L.</option>
+                                            <option value="g.">g.</option>
+                                            <option value="Kg.">Kg.</option>
+                                            <option value="mg.">mg.</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Location (สถานที่จัดเก็บ)</label><input type="text" id="add-location" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Lab (ห้องปฏิบัติการ)</label>
+                                    <input type="text" id="add-lab" list="lab-datalist" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="เลือกหรือพิมพ์ชื่อ Lab">
+                                    <datalist id="lab-datalist">
+                                        <option value="ปรสิตวิทยา(PA)">
+                                        <option value="ไวรัสวิทยา(VI)">
+                                        <option value="ไรวัสวิทยาทางสัตว์ปีก(AI)">
+                                    </datalist>
+                                </div>
+                            </div>
+
+                            <!-- Section 3: วันที่ & การเตือน -->
+                            <h3 class="text-lg font-semibold text-sky-800 border-b border-sky-100 pb-2 pt-4 flex items-center gap-2"><i class="fa-solid fa-calendar-alt"></i> วันที่และการเตือนอันตราย</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Received Date</label><input type="date" id="add-receivedDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Opened Date</label><input type="date" id="add-openedDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                                <div><label class="block text-sm font-medium text-slate-700 mb-1">Expired Date <span class="text-orange-500">*</span></label><input type="date" id="add-expiredDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Hazard Rating</label>
+                                    <select id="add-hazard" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                                        <option value="Flamable" class="text-red-600 font-semibold">Flamable (ไวไฟ)</option>
+                                        <option value="Oxidizing" class="text-yellow-600 font-semibold">Oxidizing (ออกซิไดซ์)</option>
+                                        <option value="Explosive" class="text-orange-600 font-semibold">Explosive (ระเบิด)</option>
+                                        <option value="Corrosive" class="text-zinc-600 font-semibold">Corrosive (กัดกร่อน)</option>
+                                        <option value="CompressGas" class="text-sky-600 font-semibold">CompressGas (แก๊สอัด)</option>
+                                        <option value="Toxic" class="text-purple-600 font-semibold">Toxic (มีพิษ)</option>
+                                        <option value="Harmful" class="text-amber-600 font-semibold">Harmful (อันตราย)</option>
+                                        <option value="EnvironHazard" class="text-green-600 font-semibold">EnvironHazard (อันตรายต่อสิ่งแวดล้อม)</option>
+                                        <option value="HealthHazard" class="text-rose-600 font-semibold">HealthHazard (อันตรายต่อสุขภาพ)</option>
+                                        <option value="None">ไม่มี</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">รูปภาพฉลาก/ขวด (Optional)</label>
+                                    <input type="file" id="add-image" accept="image/*" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                                </div>
+                            </div>
+
+                            <div class="pt-6 flex justify-end gap-3 border-t border-slate-100">
+                                <button type="reset" class="px-5 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition font-medium">ล้างข้อมูล</button>
+                                <button type="submit" class="px-6 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-500/30 transition font-medium">บันทึกข้อมูลสารเคมี</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 3. Withdraw View -->
+                <div id="view-withdraw" class="view-section hidden-view max-w-4xl mx-auto">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">เบิกใช้ / ตัดสต๊อกสารเคมี</h2>
+                    <p class="text-sm text-slate-500 mb-6">เลือกสารเคมีและขวดที่ต้องการเบิกใช้งาน</p>
+
+                    <!-- Filter สำหรับหน้าเบิก -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-sky-100 mb-6 flex gap-3 flex-wrap">
+                        <select id="wd-lab-filter" onchange="renderWithdrawCards()" class="w-full md:w-auto px-4 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none">
+                            <option value="">ห้องปฏิบัติการทั้งหมด (All Labs)</option>
+                            <option value="ปรสิตวิทยา(PA)">ปรสิตวิทยา(PA)</option>
+                            <option value="ไวรัสวิทยา(VI)">ไวรัสวิทยา(VI)</option>
+                            <option value="ไรวัสวิทยาทางสัตว์ปีก(AI)">ไรวัสวิทยาทางสัตว์ปีก(AI)</option>
+                        </select>
+                        <input type="text" id="wd-search" onkeyup="renderWithdrawCards()" placeholder="ค้นหาชื่อสารเคมี..." class="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none">
+                    </div>
+
+                    <!-- รายการสารเคมีจัดกลุ่มตามชื่อ -->
+                    <div id="withdraw-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <!-- Cards injected by JS -->
+                    </div>
+
+                    <!-- Card ฟอร์มเบิก (โชว์เมื่อกดเลือกการ์ด) -->
+                    <div id="withdraw-action-area" class="hidden-view bg-white border border-orange-200 rounded-xl p-6 shadow-lg shadow-orange-100/50 mt-8 relative">
+                        <button onclick="closeWithdrawAction()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl"></i></button>
+                        
+                        <div class="flex items-center gap-3 mb-4 border-b border-slate-100 pb-4">
+                            <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-2xl"><i class="fa-solid fa-flask"></i></div>
+                            <div>
+                                <h4 class="font-bold text-xl text-slate-800" id="wd-action-name">Chemical Name</h4>
+                                <p class="text-sm text-sky-600" id="wd-action-lab">Lab: -</p>
+                            </div>
+                        </div>
+
+                        <form id="form-withdraw" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">เลือกขวด (Bottle No.) ที่ต้องการเบิก</label>
+                                <select id="wd-bottle-select" onchange="onBottleSelectChange()" required class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-slate-50 text-slate-800 font-medium">
+                                    <!-- Options injected -->
+                                </select>
+                            </div>
+                            
+                            <div class="bg-sky-50 p-4 rounded-lg flex justify-between items-center border border-sky-100">
+                                <span class="text-slate-600">ปริมาตรคงเหลือในขวดนี้:</span>
+                                <div>
+                                    <span class="font-bold text-2xl text-sky-700" id="wd-bottle-remained">0.00</span>
+                                    <span class="font-semibold text-sky-700 ml-1" id="wd-bottle-unit"></span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">ปริมาณที่เบิกใช้ (หน่วยตามฉลาก)</label>
+                                <div class="flex gap-3">
+                                    <input type="number" id="wd-amount-input" step="0.01" min="0.01" required class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-lg">
+                                    <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold transition shadow-md w-1/3">
+                                        ตัดสต๊อก
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Mobile Bottom Nav -->
+            <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex justify-around p-2 z-20 pb-safe shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+                <button onclick="navTo('dashboard')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-dashboard">
+                    <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">รายการ</span>
+                </button>
+                <button onclick="navTo('add')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition relative top-[-10px]" id="mob-nav-add">
+                    <div class="bg-orange-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg mb-1 border-4 border-white">
+                        <i class="fa-solid fa-plus text-xl"></i>
+                    </div>
+                    <span class="text-[10px] font-medium text-orange-500">เพิ่มใหม่</span>
+                </button>
+                <button onclick="navTo('withdraw')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-withdraw">
+                    <i class="fa-solid fa-flask text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">เบิกใช้</span>
+                </button>
+            </nav>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- --- ส่วนของ Modals --- -->
+    <!-- ========================================== -->
+    
+    <!-- 1. Modal: Force Password Change -->
+    <div id="modal-pwd-change" class="hidden-view fixed inset-0 bg-slate-900/80 z-[100] flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl relative border-t-4 border-orange-500">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">เปลี่ยนรหัสผ่านครั้งแรก</h3>
+                <p class="text-sm text-slate-500 mt-2">เพื่อความปลอดภัย กรุณาตั้งรหัสผ่านใหม่สำหรับการเข้าใช้งานครั้งแรกของคุณ</p>
+            </div>
+            <form id="form-pwd-change" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+                    <input type="password" id="new-pwd" required minlength="6" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" id="confirm-pwd" required minlength="6" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-slate-800 text-white font-medium py-3 rounded-lg hover:bg-slate-900 transition mt-4 shadow-md">บันทึกรหัสผ่านใหม่</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Modal: Chemical Details -->
+    <div id="modal-details" class="hidden-view fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative border-t-4 border-sky-500">
+            <div class="bg-white px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-microscope text-sky-500"></i> รายละเอียดสารเคมี</h3>
+                <button onclick="closeModal('modal-details')" class="text-slate-400 hover:text-red-500 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 text-sm text-slate-700" id="detail-content">
+                <!-- Content injected via JS -->
+            </div>
+            <div class="bg-slate-50 px-6 py-4 border-t flex justify-between items-center sticky bottom-0">
+                <button onclick="generateQR()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-lg transition flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-qrcode"></i> สร้าง QR Code
+                </button>
+                <button onclick="closeModal('modal-details')" class="px-5 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition font-medium">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Modal & Section: Print QR Code -->
+    <div id="modal-qr" class="hidden-view fixed inset-0 bg-slate-900/80 z-[60] flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-8 max-w-sm w-full text-center shadow-2xl relative">
+            <button onclick="closeModal('modal-qr')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 no-print"><i class="fa-solid fa-times text-xl"></i></button>
+            
+            <div id="print-qr-section" class="bg-white p-6 border-4 border-slate-800 rounded-2xl flex flex-col items-center justify-center relative mx-auto my-2 w-[260px] shadow-sm">
+                <!-- โลโก้ด้านบนสุด -->
+                <img id="qr-logo-img" src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="h-10 mb-3 object-contain">
+                
+                <h3 class="font-bold text-lg mb-1 text-slate-900 text-center leading-tight w-full break-words" id="qr-chem-name">Chemical Name</h3>
+                <p class="text-sm text-slate-600 font-semibold mb-3" id="qr-chem-bottle">Bottle No: 000</p>
+                
+                <!-- กรอบชั้นในรอบ QR Code -->
+                <div class="p-2 bg-white border-2 border-slate-200 rounded-xl mb-3 shadow-inner">
+                    <div id="qr-container" class="flex justify-center"></div>
+                </div>
+                
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">BonDTrack System</p>
+            </div>
+
+            <button onclick="downloadQR()" class="no-print mt-6 w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-3 rounded-lg transition flex justify-center items-center gap-2 shadow-lg">
+                <i class="fa-solid fa-download"></i> ดาวน์โหลดรูปภาพ QR Code
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/80 z-[200] flex justify-center items-center backdrop-blur-sm">
+        <div class="flex flex-col items-center">
+            <i class="fa-solid fa-circle-notch fa-spin text-5xl text-orange-500 mb-4"></i>
+            <p class="text-slate-600 font-medium">กำลังโหลดข้อมูล...</p>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- --- ส่วนของ JavaScript --- -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Firebase Config ของคุณ
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7HQfI4K9FzXlokeUCTM0oKsNuR611nDM",
+            authDomain: "bondtrack-2741f.firebaseapp.com",
+            projectId: "bondtrack-2741f",
+            storageBucket: "bondtrack-2741f.firebasestorage.app",
+            messagingSenderId: "1082926018498",
+            appId: "1:1082926018498:web:92178c6bc8e889ee5e705b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ==========================================
+        // --- 2. การตั้งค่าชื่อผู้ใช้งาน (Mapping Email to Name) ---
+        // วิธีการแก้ไขสำหรับ Developer คนต่อไป: 
+        // หากต้องการเพิ่มผู้ใช้ให้แสดงเป็นชื่อ ให้ใส่ลูกน้ำ (,) ด้านหลังบรรทัดเดิม 
+        // แล้วพิมพ์ 'อีเมลผู้ใช้': 'ชื่อที่ต้องการให้แสดง' ในบรรทัดใหม่ตามรูปแบบด้านล่าง
+        // ==========================================
+        const userNamesMap = {
+            'aunzero2536@hotmail.com': 'ผู้ดูแลระบบ (Admin)',
+            'staff1@example.com': 'สมชาย ใจดี',
+            // 'test@example.com': 'ชื่อ นามสกุล ตัวอย่าง'
+        };
+
+        // ฟังก์ชันช่วยดึงชื่อจากอีเมล ถ้าไม่มีรายชื่อตั้งไว้จะแสดงอีเมลแทน
+        const getUserDisplayName = (email) => {
+            if (!email) return 'Unknown User';
+            return userNamesMap[email] || email;
+        };
+        // ==========================================
+
+        // --- Global Variables ---
+        let currentUser = null;
+        let chemicalsData = [];
+        let groupedChemicals = {};
+        let currentSelectedChemical = null;
+        let imageBase64Data = "";
+
+        // --- UI Utils ---
+        const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden-view');
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden-view');
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden-view');
+        const openModal = (id) => document.getElementById(id).classList.remove('hidden-view');
+
+        // Sidebar Toggle
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                sidebar.classList.remove('sidebar-collapsed', 'hidden');
+                sidebar.classList.add('w-64');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('sidebar-collapsed');
+                sidebar.classList.remove('w-64');
+                overlay.classList.add('hidden');
+            }
+        };
+
+        // Navigation
+        window.navTo = (viewId) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
+            
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-slate-700', 'text-white', 'border-l-4', 'border-orange-500');
+            });
+            ['dashboard', 'add', 'withdraw'].forEach(id => {
+                const mobEl = document.getElementById(`mob-nav-${id}`);
+                if(mobEl && id !== 'add') { mobEl.classList.remove('text-orange-500'); mobEl.classList.add('text-slate-400'); }
+            });
+
+            document.getElementById(`view-${viewId}`).classList.remove('hidden-view');
+            
+            const activeNav = document.getElementById(`nav-${viewId}`);
+            if(activeNav) activeNav.classList.add('bg-slate-700', 'text-white', 'border-l-4', 'border-orange-500');
+            
+            const activeMobNav = document.getElementById(`mob-nav-${viewId}`);
+            if(activeMobNav && viewId !== 'add') { activeMobNav.classList.remove('text-slate-400'); activeMobNav.classList.add('text-orange-500'); }
+
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('sidebar-collapsed');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
+
+            if(viewId === 'dashboard') renderTable();
+            if(viewId === 'withdraw') renderWithdrawCards();
+        };
+
+        const getHazardColor = (hazard) => {
+            const map = {
+                'Flamable': 'text-red-500', 'Oxidizing': 'text-yellow-600', 'Explosive': 'text-orange-600',
+                'Corrosive': 'text-zinc-600', 'CompressGas': 'text-sky-500', 'Toxic': 'text-purple-600',
+                'Harmful': 'text-amber-500', 'EnvironHazard': 'text-green-500', 'HealthHazard': 'text-rose-500'
+            };
+            return map[hazard] || 'text-slate-700';
+        };
+
+        const checkExpireStatus = (expDateStr) => {
+            if(!expDateStr) return { text: '', class: 'text-slate-500' };
+            const exp = new Date(expDateStr);
+            const today = new Date();
+            const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return { text: '<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">หมดอายุ</span>', class: 'text-red-600 font-bold' };
+            if (diffDays <= 30) return { text: '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded ml-2 font-bold">ใกล้หมดอายุ</span>', class: 'text-yellow-600 font-bold' };
+            return { text: '', class: 'text-slate-500' };
+        };
+
+        // --- Auth ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // --- 2. นำชื่อที่แปลงแล้วไปแสดงผล ---
+                const displayName = getUserDisplayName(user.email);
+                
+                document.getElementById('login-page').classList.add('hidden-view');
+                document.getElementById('main-app').classList.remove('hidden-view');
+                document.getElementById('user-email-display').innerText = displayName; // แสดงชื่อแทนอีเมล
+                document.getElementById('user-avatar').innerText = displayName.charAt(0).toUpperCase();
+                
+                if (user.metadata) {
+                    const createTime = new Date(user.metadata.creationTime).getTime();
+                    const lastSignIn = new Date(user.metadata.lastSignInTime).getTime();
+                    if (Math.abs(lastSignIn - createTime) < 5000) {
+                        openModal('modal-pwd-change');
+                    }
+                }
+                loadChemicalsRealtime();
+                navTo('dashboard');
+            } else {
+                currentUser = null;
+                document.getElementById('login-page').classList.remove('hidden-view');
+                document.getElementById('main-app').classList.add('hidden-view');
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            showLoading();
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                Swal.fire('ข้อผิดพลาด', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง (โปรดเช็คใน Firebase Auth)', 'error');
+            }
+        });
+
+        window.handleLogout = () => {
+            Swal.fire({ title: 'ยืนยันการออกจากระบบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#f97316', cancelButtonColor: '#94a3b8', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก' })
+            .then(async (result) => { if (result.isConfirmed) await signOut(auth); });
+        };
+
+        document.getElementById('form-pwd-change').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPwd = document.getElementById('new-pwd').value;
+            if (newPwd !== document.getElementById('confirm-pwd').value) return Swal.fire('ผิดพลาด', 'รหัสผ่านไม่ตรงกัน', 'error');
+            try {
+                showLoading();
+                await updatePassword(currentUser, newPwd);
+                hideLoading();
+                closeModal('modal-pwd-change');
+                Swal.fire('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success');
+            } catch (error) {
+                hideLoading();
+                Swal.fire('ข้อผิดพลาด', error.message, 'error');
+            }
+        });
+
+        // --- 1. ฟังก์ชันโหลดข้อมูล (แก้ไขให้รองรับการอ่าน Hash แทน Parameter) ---
+        const loadChemicalsRealtime = () => {
+            if (!currentUser) return;
+            showLoading();
+            onSnapshot(collection(db, 'chemicals'), (snapshot) => {
+                chemicalsData = [];
+                snapshot.forEach((doc) => chemicalsData.push({ id: doc.id, ...doc.data() }));
+                chemicalsData.sort((a, b) => new Date(b.receivedDate) - new Date(a.receivedDate));
+
+                if(!document.getElementById('view-dashboard').classList.contains('hidden-view')) renderTable();
+                if(!document.getElementById('view-withdraw').classList.contains('hidden-view')) renderWithdrawCards();
+                hideLoading();
+
+                // เปลี่ยนมาเช็ค Hash (#) แทน เพื่อป้องกัน 404 บนเซิร์ฟเวอร์
+                const hash = window.location.hash;
+                if (hash && hash.length > 1) {
+                    const scannedBottle = decodeURIComponent(hash.substring(1)); // ตัด # ออก
+                    const foundChem = chemicalsData.find(c => c.bottleNo === scannedBottle);
+                    if (foundChem) {
+                        showChemicalDetails(foundChem);
+                        // เคลียร์ URL ทิ้ง ป้องกันการเด้งซ้ำ
+                        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+                    } else {
+                        Swal.fire('ไม่พบข้อมูล', 'ไม่พบสารเคมีขวดที่สแกนในระบบ', 'error');
+                        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+                    }
+                }
+            }, (error) => { hideLoading(); console.error(error); });
+        };
+
+        window.renderTable = () => {
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const filterHazard = document.getElementById('filter-hazard').value;
+            const filterLab = document.getElementById('filter-lab').value;
+            const tbody = document.getElementById('chemical-table-body');
+            
+            tbody.innerHTML = '';
+            let count = 0;
+
+            chemicalsData.forEach(chem => {
+                const matchSearch = chem.name.toLowerCase().includes(searchVal) || chem.bottleNo.toLowerCase().includes(searchVal) || (chem.casNo && chem.casNo.toLowerCase().includes(searchVal));
+                const matchHazard = filterHazard === "" || chem.hazardRating === filterHazard;
+                const matchLab = filterLab === "" || chem.lab === filterLab;
+
+                if (matchSearch && matchHazard && matchLab) {
+                    count++;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-sky-50 cursor-pointer transition border-b border-slate-50";
+                    tr.onclick = () => showChemicalDetails(chem);
+                    
+                    let statusColor = "bg-green-100 text-green-700";
+                    if(chem.status === "Low Stock") statusColor = "bg-yellow-100 text-yellow-700";
+                    if(chem.status === "Empty") statusColor = "bg-red-100 text-red-700";
+                    if(chem.status === "Expired") statusColor = "bg-slate-200 text-slate-700";
+
+                    const hzColor = getHazardColor(chem.hazardRating);
+                    const expStatus = checkExpireStatus(chem.expiredDate);
+
+                    tr.innerHTML = `
+                        <td class="p-4"><span class="font-medium text-slate-800">${chem.bottleNo}</span></td>
+                        <td class="p-4 font-bold ${hzColor}">${chem.name}</td>
+                        <td class="p-4 text-sky-700 font-medium">${chem.lab || '-'}</td>
+                        <td class="p-4 font-medium"><span class="text-lg">${chem.remained}</span> / <span class="text-xs text-slate-400">${chem.volume} ${chem.unit || ''}</span></td>
+                        <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColor}">${chem.status}</span></td>
+                        <td class="p-4 ${expStatus.class}">${chem.expiredDate} ${expStatus.text}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('empty-state').classList.toggle('hidden-view', count > 0);
+            tbody.parentElement.classList.toggle('hidden-view', count === 0);
+        };
+
+        window.showChemicalDetails = (chem) => {
+            currentSelectedChemical = chem;
+            const content = document.getElementById('detail-content');
+            const hzColor = getHazardColor(chem.hazardRating);
+            const expStatus = checkExpireStatus(chem.expiredDate);
+            
+            let imgHTML = '';
+            if(chem.imageStr) {
+                imgHTML = `<div class="col-span-2 mt-4"><p class="text-xs text-slate-400 mb-2">รูปภาพอ้างอิง:</p><img src="${chem.imageStr}" class="max-h-48 rounded-lg border shadow-sm"></div>`;
+            }
+
+            content.innerHTML = `
+                <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                    <div class="col-span-2 md:col-span-1 border-b border-sky-100 pb-2"><span class="text-slate-400 block text-xs">Bottle No.</span> <span class="font-bold text-lg text-slate-800">${chem.bottleNo}</span></div>
+                    <div class="col-span-2 md:col-span-1 border-b border-sky-100 pb-2"><span class="text-slate-400 block text-xs">Chemical Name</span> <span class="font-bold text-xl ${hzColor}">${chem.name}</span></div>
+                    
+                    <div class="bg-sky-50 p-3 rounded-lg border border-sky-100"><span class="text-sky-600 block text-xs font-semibold">Volume (ปริมาตรเริ่มต้น)</span> <span class="font-semibold text-sky-800 text-lg">${chem.volume} ${chem.unit || ''}</span></div>
+                    <div class="bg-orange-50 p-3 rounded-lg border border-orange-100"><span class="text-orange-500 block text-xs font-semibold">Remained (ปริมาตรคงเหลือ)</span> <span class="font-bold text-orange-600 text-2xl">${chem.remained} ${chem.unit || ''}</span></div>
+                    
+                    <div><span class="text-slate-400 block text-xs mt-2">Status</span> <span class="font-semibold px-2 py-1 bg-slate-100 rounded text-xs">${chem.status}</span></div>
+                    <div><span class="text-slate-400 block text-xs mt-2">Amount</span> <span class="font-medium">${chem.amount} ขวด</span></div>
+                    
+                    <div><span class="text-slate-400 block text-xs mt-2">CAS No.</span> <span>${chem.casNo || '-'}</span></div>
+                    <div><span class="text-slate-400 block text-xs mt-2">CAT No.</span> <span>${chem.catNo || '-'}</span></div>
+                    
+                    <div class="col-span-2"><span class="text-slate-400 block text-xs mt-2">Supplier</span> <span class="font-medium text-slate-700">${chem.supplier || '-'}</span></div>
+                    
+                    <div><span class="text-slate-400 block text-xs mt-2">Received Date</span> <span>${chem.receivedDate}</span></div>
+                    <div><span class="text-slate-400 block text-xs mt-2">Opened Date</span> <span>${chem.openedDate || '-'}</span></div>
+                    <div class="col-span-2"><span class="text-slate-400 block text-xs mt-2">Expired Date</span> <span class="${expStatus.class} text-lg">${chem.expiredDate}</span> ${expStatus.text}</div>
+                    
+                    <div><span class="text-slate-400 block text-xs mt-2">Hazard Rating</span> <span class="font-bold ${hzColor}">${chem.hazardRating}</span></div>
+                    <div><span class="text-slate-400 block text-xs mt-2">Lab (ห้องปฏิบัติการ)</span> <span class="font-bold text-sky-700">${chem.lab || '-'}</span></div>
+                    <div class="col-span-2"><span class="text-slate-400 block text-xs">Location</span> <span>${chem.location}</span></div>
+                    ${imgHTML}
+                </div>
+            `;
+            openModal('modal-details');
+        };
+
+        document.getElementById('add-image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => imageBase64Data = ev.target.result;
+                reader.readAsDataURL(file);
+            } else { imageBase64Data = ""; }
+        });
+
+        document.getElementById('form-add-chemical').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if(!currentUser) {
+                Swal.fire('ข้อผิดพลาด', 'คุณยังไม่ได้เข้าสู่ระบบ กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล', 'error');
+                return;
+            }
+
+            const vol = Number(document.getElementById('add-volume').value);
+            const chemData = {
+                bottleNo: document.getElementById('add-bottleNo').value,
+                name: document.getElementById('add-name').value,
+                casNo: document.getElementById('add-casNo').value,
+                catNo: document.getElementById('add-catNo').value,
+                supplier: document.getElementById('add-supplier').value,
+                status: document.getElementById('add-status').value,
+                amount: Number(document.getElementById('add-amount').value),
+                volume: vol,
+                remained: vol, 
+                unit: document.getElementById('add-unit').value,
+                receivedDate: document.getElementById('add-receivedDate').value,
+                openedDate: document.getElementById('add-openedDate').value,
+                expiredDate: document.getElementById('add-expiredDate').value,
+                hazardRating: document.getElementById('add-hazard').value,
+                location: document.getElementById('add-location').value,
+                lab: document.getElementById('add-lab').value,
+                imageStr: imageBase64Data,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                showLoading();
+                const userName = getUserDisplayName(currentUser.email); // ดึงชื่อที่แมปไว้บันทึกลง Log
+                
+                await setDoc(doc(db, 'chemicals', chemData.bottleNo), chemData);
+                await setDoc(doc(db, 'system_logs', `Log_${Date.now()}`), { 
+                    action: `เพิ่มสารเคมีใหม่: ${chemData.name} (Bottle: ${chemData.bottleNo})`, 
+                    date: new Date().toISOString(), 
+                    user: userName 
+                });
+                
+                hideLoading();
+                Swal.fire('สำเร็จ!', 'บันทึกข้อมูลสารเคมีเรียบร้อยแล้ว', 'success');
+                document.getElementById('form-add-chemical').reset();
+                imageBase64Data = "";
+                navTo('dashboard');
+            } catch (error) { 
+                hideLoading(); 
+                Swal.fire('ข้อผิดพลาด', error.message, 'error'); 
+            }
+        });
+
+        // --- Withdraw System ---
+        window.renderWithdrawCards = () => {
+            const container = document.getElementById('withdraw-cards-container');
+            const searchVal = document.getElementById('wd-search').value.toLowerCase();
+            const labFilter = document.getElementById('wd-lab-filter').value;
+            
+            container.innerHTML = '';
+            groupedChemicals = {}; 
+
+            chemicalsData.forEach(chem => {
+                const matchSearch = chem.name.toLowerCase().includes(searchVal);
+                const matchLab = labFilter === "" || chem.lab === labFilter;
+                
+                if(matchSearch && matchLab && chem.remained > 0) {
+                    if(!groupedChemicals[chem.name]) groupedChemicals[chem.name] = [];
+                    groupedChemicals[chem.name].push(chem);
+                }
+            });
+
+            for (const [name, items] of Object.entries(groupedChemicals)) {
+                const totalRemained = items.reduce((sum, item) => sum + item.remained, 0);
+                const labNames = [...new Set(items.map(i => i.lab))].join(', ');
+                const hzColor = getHazardColor(items[0].hazardRating);
+
+                const div = document.createElement('div');
+                div.className = "bg-white p-5 rounded-xl border border-sky-100 shadow-sm hover:shadow-md hover:border-orange-300 cursor-pointer transition flex flex-col justify-between";
+                div.onclick = () => openWithdrawAction(name);
+                div.innerHTML = `
+                    <div>
+                        <h4 class="font-bold text-lg ${hzColor} mb-1">${name}</h4>
+                        <p class="text-xs text-slate-500 mb-3"><i class="fa-solid fa-microscope text-sky-500 mr-1"></i> ${labNames || 'ไม่มี Lab'}</p>
+                    </div>
+                    <div class="flex justify-between items-end border-t border-slate-50 pt-3">
+                        <span class="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-1 rounded">มี ${items.length} ขวด</span>
+                        <div class="text-right">
+                            <span class="text-[10px] text-slate-400 block">คงเหลือรวม</span>
+                            <span class="font-bold text-orange-500 text-lg">${totalRemained.toFixed(2)} ${items[0].unit || ''}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+
+            if(Object.keys(groupedChemicals).length === 0) {
+                container.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400"><p>ไม่พบรายการที่สามารถเบิกได้</p></div>';
+            }
+            
+            document.getElementById('withdraw-action-area').classList.add('hidden-view');
+        };
+
+        window.openWithdrawAction = (chemName) => {
+            const items = groupedChemicals[chemName];
+            if(!items || items.length === 0) return;
+
+            document.getElementById('wd-action-name').innerText = chemName;
+            document.getElementById('wd-action-lab').innerText = `Lab: ${[...new Set(items.map(i => i.lab))].join(', ')}`;
+            
+            const select = document.getElementById('wd-bottle-select');
+            select.innerHTML = '';
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.bottleNo;
+                opt.text = `Bottle No: ${item.bottleNo} (คงเหลือ: ${item.remained} ${item.unit || ''})`;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('withdraw-action-area').classList.remove('hidden-view');
+            document.getElementById('withdraw-action-area').scrollIntoView({ behavior: 'smooth' });
+            window.onBottleSelectChange(); 
+        };
+
+        window.closeWithdrawAction = () => {
+            document.getElementById('withdraw-action-area').classList.add('hidden-view');
+        };
+
+        window.onBottleSelectChange = () => {
+            const bottleNo = document.getElementById('wd-bottle-select').value;
+            const chem = chemicalsData.find(c => c.bottleNo === bottleNo);
+            if(chem) {
+                document.getElementById('wd-bottle-remained').innerText = chem.remained.toFixed(2);
+                document.getElementById('wd-bottle-unit').innerText = chem.unit || '';
+                document.getElementById('wd-amount-input').max = chem.remained;
+                document.getElementById('wd-amount-input').value = '';
+                currentSelectedChemical = chem;
+            }
+        };
+
+        document.getElementById('form-withdraw').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser || !currentSelectedChemical) return;
+
+            const useAmount = Number(document.getElementById('wd-amount-input').value);
+            if (useAmount <= 0 || useAmount > currentSelectedChemical.remained) return Swal.fire('ผิดพลาด', 'จำนวนไม่ถูกต้อง', 'error');
+
+            const newRemained = currentSelectedChemical.remained - useAmount;
+            let newStatus = currentSelectedChemical.status;
+            if (newRemained === 0) newStatus = "Empty";
+            else if (newRemained < (currentSelectedChemical.volume * 0.2)) newStatus = "Low Stock";
+
+            try {
+                showLoading();
+                const userName = getUserDisplayName(currentUser.email); // ดึงชื่อที่แมปไว้บันทึกลง Log
+
+                await updateDoc(doc(db, 'chemicals', currentSelectedChemical.bottleNo), { remained: newRemained, status: newStatus });
+                
+                const usageId = `${currentSelectedChemical.name}_${Date.now()}`;
+                await setDoc(doc(db, 'chemical_usage', usageId), {
+                    chemicalName: currentSelectedChemical.name, bottleNo: currentSelectedChemical.bottleNo,
+                    usedAmount: useAmount, date: new Date().toISOString(), user: userName
+                });
+
+                await setDoc(doc(db, 'system_logs', `Log_${Date.now()}`), { 
+                    action: `เบิกใช้: ${currentSelectedChemical.name} ขวด ${currentSelectedChemical.bottleNo} จน. ${useAmount}`, 
+                    date: new Date().toISOString(), 
+                    user: userName 
+                });
+
+                hideLoading();
+                Swal.fire('สำเร็จ', `ตัดสต๊อกเรียบร้อย คงเหลือ ${newRemained.toFixed(2)}`, 'success');
+                renderWithdrawCards();
+            } catch (error) { 
+                hideLoading(); 
+                Swal.fire('ข้อผิดพลาด', error.message, 'error'); 
+            }
+        });
+
+        // --- Export ---
+        window.exportToExcel = () => {
+            if (chemicalsData.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับ Export', 'info');
+            const exportData = chemicalsData.map(c => ({
+                "Bottle No.": c.bottleNo, "Chemical Name": c.name, "Lab": c.lab, "Status": c.status,
+                "Hazard Rating": c.hazardRating, "Volume": c.volume, "Unit": c.unit || '', "Remained": c.remained,
+                "CAS No.": c.casNo, "CAT No.": c.catNo, "Supplier": c.supplier,
+                "Received": c.receivedDate, "Opened": c.openedDate || '-', "Expired": c.expiredDate
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Chemical Inventory");
+            XLSX.writeFile(wb, "BonDTrack_Chemicals.xlsx");
+        };
+
+        // --- 2. QR Code แบบ Link URL (ใช้ Hash ป้องกัน 404) ---
+        window.generateQR = () => {
+            if (!currentSelectedChemical) return;
+
+            closeModal('modal-details');
+            openModal('modal-qr');
+
+            setTimeout(() => {
+                const qrContainer = document.getElementById('qr-container');
+                qrContainer.innerHTML = '';
+
+                const chem = currentSelectedChemical;
+                document.getElementById('qr-chem-name').innerText = chem.name;
+                document.getElementById('qr-chem-bottle').innerText = `Bottle No: ${chem.bottleNo}`;
+
+                // ใช้ # แทน ? ป้องกัน 404 Not Found
+                const baseUrl = window.location.href.split('?')[0].split('#')[0];
+                const qrUrl = `${baseUrl}#${encodeURIComponent(chem.bottleNo)}`;
+
+                try {
+                    new QRCode(qrContainer, {
+                        text: qrUrl,
+                        width: 160,
+                        height: 160,
+                        colorDark : "#0f172a",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.M
+                    });
+                } catch (error) {
+                    console.error(error);
+                    qrContainer.innerHTML = '<p class="text-red-500 text-sm text-center p-4">เกิดข้อผิดพลาดในการสร้าง QR</p>';
+                }
+            }, 400);
+        };
+
+        // --- 3. ฟังก์ชันดาวน์โหลดรูปภาพ QR Code (แก้ปัญหามือถือเว็บเด้ง) ---
+        window.downloadQR = async () => {
+            if (!currentSelectedChemical) return;
+            showLoading();
+
+            const printSection = document.getElementById('print-qr-section');
+            const logoImg = document.getElementById('qr-logo-img');
+            const originalSrc = logoImg.src;
+            const blankImage = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            // เช็คว่าเป็นมือถือหรือไม่
+            const isMobile = window.innerWidth < 768;
+
+            try {
+                const response = await fetch(`https://images.weserv.nl/?url=${encodeURIComponent(originalSrc)}`);
+                if (!response.ok) throw new Error("Proxy failed");
+
+                const blob = await response.blob();
+                const base64Url = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+
+                await new Promise((resolve) => {
+                    logoImg.onload = resolve;
+                    logoImg.onerror = resolve;
+                    logoImg.src = base64Url;
+                });
+
+                await new Promise(r => setTimeout(r, 150));
+
+                const canvas = await html2canvas(printSection, {
+                    backgroundColor: "#ffffff",
+                    scale: isMobile ? 2 : 3, // ลดขนาดบนมือถือป้องกัน App เด้ง (Memory crash)
+                    useCORS: true,
+                    allowTaint: false
+                });
+
+                const imageUrl = canvas.toDataURL("image/png");
+
+                // ระบบ Share/Save พิเศษสำหรับมือถือ (รองรับ iOS/Android)
+                if (isMobile && navigator.share) {
+                    try {
+                        // แปลง Base64 เป็น File Object
+                        const byteString = atob(imageUrl.split(',')[1]);
+                        const ab = new ArrayBuffer(byteString.length);
+                        const ia = new Uint8Array(ab);
+                        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                        const file = new File([ab], `QR_${currentSelectedChemical.bottleNo}.png`, { type: 'image/png' });
+
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            hideLoading(); // ปิดโหลดก่อนเด้งหน้าต่างแชร์
+                            await navigator.share({
+                                files: [file],
+                                title: 'QR Code',
+                                text: `QR Code สารเคมี: ${currentSelectedChemical.name}`
+                            });
+                            return; // จบการทำงาน (เซฟสำเร็จ)
+                        }
+                    } catch (err) {
+                        console.log("Share cancelled or failed", err);
+                    }
+                }
+
+                // กรณีเป็น PC หรือ Web Share ไม่ทำงาน ให้ดาวน์โหลดปกติ
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = `QR_${currentSelectedChemical.bottleNo}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            } catch (err) {
+                console.error(err);
+                logoImg.src = blankImage;
+                await new Promise(r => setTimeout(r, 100));
+
+                try {
+                    const canvas = await html2canvas(printSection, {
+                        backgroundColor: "#ffffff",
+                        scale: isMobile ? 2 : 3,
+                        useCORS: true
+                    });
+                    const imageUrl = canvas.toDataURL("image/png");
+                    const link = document.createElement('a');
+                    link.href = imageUrl;
+                    link.download = `QR_${currentSelectedChemical.bottleNo}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    Swal.fire('สำเร็จบางส่วน', 'ดาวน์โหลดสำเร็จ แต่โฮสติ้งบล็อกรูปโลโก้', 'warning');
+                } catch (e) {
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถแคปหน้าจอได้', 'error');
+                }
+            } finally {
+                logoImg.src = originalSrc;
+                hideLoading();
+            }
+        };
+    </script>
+</body>
+</html>
