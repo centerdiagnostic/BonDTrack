@@ -16,6 +16,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- html2canvas สำหรับดาวน์โหลดรูปภาพ QR Code พร้อมข้อความทั้งหมด -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- html5-qrcode สำหรับเปิดกล้องสแกน QR Code ภายในแอป -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <!-- --- ส่วนของ CSS (Custom Styles) --- -->
     <style>
@@ -70,7 +72,6 @@
         <div class="hidden md:flex md:w-1/2 bg-sky-50 justify-center items-center flex-col p-10 relative overflow-hidden">
             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
             <div class="z-10 text-center flex flex-col items-center">
-                <!-- โลโก้ใหม่ตามลิงก์ -->
                 <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-48 mb-6 object-contain rounded-xl shadow-md border-2 border-white">
                 <h1 class="text-6xl font-bold tracking-tight mb-2 text-slate-800">Bon<span class="text-orange-500">DTrack</span></h1>
                 <p class="text-xl text-slate-500 font-light mt-4">Professional Lab Chemical Management System</p>
@@ -126,6 +127,10 @@
                     <i class="fa-solid fa-flask w-6"></i>
                     <span>เบิกใช้ / ตัดสต๊อก</span>
                 </a>
+                <!-- ปุ่มเมนูประวัติการทำรายการ -->
+                <a href="#" onclick="navTo('history')" id="nav-history" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white group transition">
+                    <i class="fa-solid fa-clock-rotate-left w-6"></i><span>ประวัติทำรายการ</span>
+                </a>
             </nav>
             <div class="p-4 border-t border-slate-700">
                 <div class="flex items-center gap-3 mb-4 px-2">
@@ -153,6 +158,9 @@
                     <h1 class="text-xl font-bold text-slate-800 md:hidden">Bon<span class="text-orange-500">DTrack</span></h1>
                 </div>
                 <div class="flex items-center gap-3">
+                    <button onclick="startScanner()" class="bg-sky-100 hover:bg-sky-200 text-sky-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode"></i> <span class="hidden sm:inline">สแกน QR</span>
+                    </button>
                     <span class="text-sm font-medium text-sky-700 hidden sm:block px-3 py-1 bg-sky-50 rounded-full border border-sky-100">Lab Chemical System</span>
                 </div>
             </header>
@@ -382,6 +390,28 @@
                     </div>
                 </div>
 
+                <!-- 4. History View -->
+                <div id="view-history" class="view-section hidden-view">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">ประวัติการทำรายการ</h2>
+                    <p class="text-sm text-slate-500 mb-6">ตรวจสอบประวัติการเพิ่มและเบิกใช้งานสารเคมี</p>
+                    <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden p-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead>
+                                    <tr class="bg-sky-50 border-b border-sky-100 text-sky-800 text-sm">
+                                        <th class="p-4 font-semibold w-1/4">วัน-เวลา</th>
+                                        <th class="p-4 font-semibold w-2/4">รายการ</th>
+                                        <th class="p-4 font-semibold w-1/4">ผู้ทำรายการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm">
+                                    <!-- Rows injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Mobile Bottom Nav -->
@@ -399,6 +429,11 @@
                 <button onclick="navTo('withdraw')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-withdraw">
                     <i class="fa-solid fa-flask text-xl mb-1"></i>
                     <span class="text-[10px] font-medium">เบิกใช้</span>
+                </button>
+                <!-- ปุ่ม Mobile Nav ประวัติการทำรายการ -->
+                <button onclick="navTo('history')" class="flex flex-col items-center p-2 text-slate-400 hover:text-orange-500 w-full transition" id="mob-nav-history">
+                    <i class="fa-solid fa-clock-rotate-left text-xl mb-1"></i>
+                    <span class="text-[10px] font-medium">ประวัติ</span>
                 </button>
             </nav>
         </main>
@@ -432,7 +467,7 @@
         </div>
     </div>
 
-    <!-- 2. Modal: Chemical Details -->
+    <!-- 2. Modal: Chemical Details (Public / Private View) -->
     <div id="modal-details" class="hidden-view fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative border-t-4 border-sky-500">
             <div class="bg-white px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">
@@ -477,6 +512,20 @@
         </div>
     </div>
 
+    <!-- 4. Modal: QR Scanner -->
+    <div id="modal-scanner" class="hidden-view fixed inset-0 bg-slate-900/90 z-[200] flex flex-col justify-center items-center p-4 backdrop-blur-sm">
+        <div class="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl relative">
+            <div class="p-4 bg-slate-800 text-white flex justify-between items-center">
+                <h3 class="font-bold"><i class="fa-solid fa-qrcode mr-2"></i>สแกน QR Code</h3>
+                <button onclick="stopScanner()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div id="reader" class="w-full"></div>
+            <div class="p-4 text-center text-sm text-slate-500 bg-slate-50">
+                หันกล้องไปยัง QR Code บนขวดสารเคมี
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/80 z-[200] flex justify-center items-center backdrop-blur-sm">
         <div class="flex flex-col items-center">
@@ -509,17 +558,12 @@
 
         // ==========================================
         // --- 2. การตั้งค่าชื่อผู้ใช้งาน (Mapping Email to Name) ---
-        // วิธีการแก้ไขสำหรับ Developer คนต่อไป: 
-        // หากต้องการเพิ่มผู้ใช้ให้แสดงเป็นชื่อ ให้ใส่ลูกน้ำ (,) ด้านหลังบรรทัดเดิม 
-        // แล้วพิมพ์ 'อีเมลผู้ใช้': 'ชื่อที่ต้องการให้แสดง' ในบรรทัดใหม่ตามรูปแบบด้านล่าง
         // ==========================================
         const userNamesMap = {
             'aunzero2536@hotmail.com': 'ผู้ดูแลระบบ (Admin)',
             'staff1@example.com': 'สมชาย ใจดี',
-            // 'test@example.com': 'ชื่อ นามสกุล ตัวอย่าง'
         };
 
-        // ฟังก์ชันช่วยดึงชื่อจากอีเมล ถ้าไม่มีรายชื่อตั้งไว้จะแสดงอีเมลแทน
         const getUserDisplayName = (email) => {
             if (!email) return 'Unknown User';
             return userNamesMap[email] || email;
@@ -532,6 +576,7 @@
         let groupedChemicals = {};
         let currentSelectedChemical = null;
         let imageBase64Data = "";
+        let html5QrcodeScanner = null;
 
         // --- UI Utils ---
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden-view');
@@ -561,7 +606,7 @@
             document.querySelectorAll('.nav-item').forEach(el => {
                 el.classList.remove('bg-slate-700', 'text-white', 'border-l-4', 'border-orange-500');
             });
-            ['dashboard', 'add', 'withdraw'].forEach(id => {
+            ['dashboard', 'add', 'withdraw', 'history'].forEach(id => {
                 const mobEl = document.getElementById(`mob-nav-${id}`);
                 if(mobEl && id !== 'add') { mobEl.classList.remove('text-orange-500'); mobEl.classList.add('text-slate-400'); }
             });
@@ -603,17 +648,105 @@
             return { text: '', class: 'text-slate-500' };
         };
 
+        // --- In-App Scanner Functions ---
+        window.startScanner = () => {
+            closeModal('modal-details'); // ปิด Modal เดิมเผื่อเปิดซ้อนกัน
+            openModal('modal-scanner');
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    stopScanner();
+                    // เช็คว่าลิงก์มี # หรือไม่
+                    if(decodedText.includes('#')) {
+                        window.location.hash = decodedText.split('#')[1];
+                    } else {
+                        window.location.hash = decodedText; // กรณีเก็บมาแค่รหัสขวด
+                    }
+                    loadChemicalsRealtime(); // รีเฟรชข้อมูลเพื่อโหลด Hash ขึ้นมา
+                },
+                (errorMessage) => {}
+            ).catch(err => {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปิดกล้องได้ กรุณาให้สิทธิ์การใช้งานกล้อง', 'error');
+                stopScanner();
+            });
+        };
+
+        window.stopScanner = () => {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    closeModal('modal-scanner');
+                }).catch(err => console.error(err));
+            } else {
+                closeModal('modal-scanner');
+            }
+        };
+
+        window.loginToWithdraw = (bottleNo) => {
+            sessionStorage.setItem('pendingWithdraw', bottleNo);
+            window.location.hash = ''; // ล้าง hash 
+            closeModal('modal-details');
+            
+            // กรณีเป็น Public View (ยังไม่ Login) ให้โหลดหน้าใหม่เพื่อแสดงหน้า Login
+            if (!currentUser || currentUser.isAnonymous) {
+                window.location.reload();
+            } else {
+                // กรณีล็อกอินอยู่แล้วพาไปหน้า withdraw เลย
+                const pendingBottle = sessionStorage.getItem('pendingWithdraw');
+                if(pendingBottle) {
+                    sessionStorage.removeItem('pendingWithdraw');
+                    navTo('withdraw');
+                    document.getElementById('wd-search').value = pendingBottle;
+                    renderWithdrawCards();
+                }
+            }
+        };
+
+        // --- History Logic (ดึงข้อมูลทั้งหมดแล้ว Sort เพื่อแก้ปัญหา Canvas Index) ---
+        const loadLogsRealtime = () => {
+            onSnapshot(collection(db, 'system_logs'), (snapshot) => {
+                const logs = [];
+                snapshot.forEach(doc => logs.push(doc.data()));
+                
+                // เรียงจากล่าสุดไปเก่าสุด
+                logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                // ดึงแค่ 50 รายการล่าสุด
+                const topLogs = logs.slice(0, 50);
+
+                const tbody = document.getElementById('history-table-body');
+                tbody.innerHTML = '';
+                topLogs.forEach((data) => {
+                    const dateObj = new Date(data.date);
+                    const dateStr = dateObj.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+                    
+                    // แยกสีตามประเภท Action (เบิกใช้/เพิ่ม)
+                    let actionStyle = "text-slate-700";
+                    if(data.action.includes('เบิกใช้')) actionStyle = "text-orange-600 font-bold";
+                    else if(data.action.includes('เพิ่ม')) actionStyle = "text-green-600 font-bold";
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-50">
+                            <td class="p-4 text-slate-500">${dateStr}</td>
+                            <td class="p-4 ${actionStyle}">${data.action}</td>
+                            <td class="p-4 text-sky-700 font-medium">${data.user}</td>
+                        </tr>
+                    `;
+                });
+            });
+        };
+
         // --- Auth ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 
-                // --- 2. นำชื่อที่แปลงแล้วไปแสดงผล ---
                 const displayName = getUserDisplayName(user.email);
                 
                 document.getElementById('login-page').classList.add('hidden-view');
                 document.getElementById('main-app').classList.remove('hidden-view');
-                document.getElementById('user-email-display').innerText = displayName; // แสดงชื่อแทนอีเมล
+                document.getElementById('user-email-display').innerText = displayName; 
                 document.getElementById('user-avatar').innerText = displayName.charAt(0).toUpperCase();
                 
                 if (user.metadata) {
@@ -623,8 +756,21 @@
                         openModal('modal-pwd-change');
                     }
                 }
+                
                 loadChemicalsRealtime();
-                navTo('dashboard');
+                loadLogsRealtime(); // โหลดประวัติ
+                
+                // จัดการ Pending Withdraw หลังล็อกอิน
+                const pendingBottle = sessionStorage.getItem('pendingWithdraw');
+                if(pendingBottle) {
+                    sessionStorage.removeItem('pendingWithdraw');
+                    navTo('withdraw');
+                    document.getElementById('wd-search').value = pendingBottle;
+                    setTimeout(() => renderWithdrawCards(), 500); 
+                } else if(!window.location.hash) {
+                    navTo('dashboard');
+                }
+                
             } else {
                 currentUser = null;
                 document.getElementById('login-page').classList.remove('hidden-view');
@@ -669,7 +815,7 @@
 
         // --- 1. ฟังก์ชันโหลดข้อมูล (แก้ไขให้รองรับการอ่าน Hash แทน Parameter) ---
         const loadChemicalsRealtime = () => {
-            if (!currentUser) return;
+            if (!currentUser) return; // หากระบบรันใน Canvas (Anon Auth) หรือมี Auth ปกติก็จะผ่านบรรทัดนี้ไปได้
             showLoading();
             onSnapshot(collection(db, 'chemicals'), (snapshot) => {
                 chemicalsData = [];
@@ -752,6 +898,7 @@
                 imgHTML = `<div class="col-span-2 mt-4"><p class="text-xs text-slate-400 mb-2">รูปภาพอ้างอิง:</p><img src="${chem.imageStr}" class="max-h-48 rounded-lg border shadow-sm"></div>`;
             }
 
+            // เพิ่มปุ่ม Public View ไว้ด้านล่างสุดของเนื้อหา
             content.innerHTML = `
                 <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                     <div class="col-span-2 md:col-span-1 border-b border-sky-100 pb-2"><span class="text-slate-400 block text-xs">Bottle No.</span> <span class="font-bold text-lg text-slate-800">${chem.bottleNo}</span></div>
@@ -776,6 +923,12 @@
                     <div><span class="text-slate-400 block text-xs mt-2">Lab (ห้องปฏิบัติการ)</span> <span class="font-bold text-sky-700">${chem.lab || '-'}</span></div>
                     <div class="col-span-2"><span class="text-slate-400 block text-xs">Location</span> <span>${chem.location}</span></div>
                     ${imgHTML}
+                    
+                    <!-- ส่วนของปุ่มสแกนถัดไปและเบิกใช้ -->
+                    <div class="col-span-2 flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-slate-200">
+                        <button onclick="startScanner()" class="flex-1 py-3 bg-sky-100 hover:bg-sky-200 text-sky-700 font-bold rounded-xl transition flex justify-center items-center gap-2"><i class="fa-solid fa-qrcode"></i> สแกนขวดถัดไป</button>
+                        <button onclick="loginToWithdraw('${chem.bottleNo}')" class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition flex justify-center items-center gap-2 shadow-lg shadow-orange-500/30"><i class="fa-solid fa-flask"></i> เข้าสู่ระบบเพื่อเบิกใช้</button>
+                    </div>
                 </div>
             `;
             openModal('modal-details');
