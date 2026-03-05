@@ -606,6 +606,31 @@
         </div>
     </div>
 
+    <div id="modal-bottle-history" class="hidden-view fixed inset-0 bg-slate-900/80 z-[70] flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden relative border-t-4 border-indigo-500">
+            <div class="bg-white px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> ประวัติความเคลื่อนไหว (รายขวด)</h3>
+                <button onclick="closeModal('modal-bottle-history')" class="text-slate-400 hover:text-red-500 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="p-0 overflow-y-auto flex-1">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                            <th class="p-4 font-semibold w-1/4">วัน-เวลา</th>
+                            <th class="p-4 font-semibold w-2/4">รายการ</th>
+                            <th class="p-4 font-semibold w-1/4">ผู้ทำรายการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bottle-history-table-body" class="divide-y divide-slate-100 text-sm">
+                        </tbody>
+                </table>
+                <div id="bottle-history-empty" class="hidden-view py-10 text-center text-slate-400">
+                    <i class="fa-solid fa-folder-open text-3xl mb-2 opacity-50"></i><br>ไม่พบประวัติความเคลื่อนไหว
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/80 z-[200] flex justify-center items-center backdrop-blur-sm">
         <div class="flex flex-col items-center">
@@ -620,7 +645,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, getDoc, deleteDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // Firebase Config ของคุณ
         const firebaseConfig = {
@@ -818,6 +843,57 @@
             });
         };
 
+        window.showBottleHistory = async (bottleNo) => {
+            openModal('modal-bottle-history');
+            const tbody = document.getElementById('bottle-history-table-body');
+            const emptyState = document.getElementById('bottle-history-empty');
+            
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center p-6 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>กำลังโหลดประวัติ...</td></tr>';
+            emptyState.classList.add('hidden-view');
+
+            try {
+                // ดึงประวัติทั้งหมดแล้วมากรองฝั่ง Client เพื่อหา BottleNo
+                const q = query(collection(db, 'system_logs'), orderBy('date', 'desc'));
+                const snapshot = await getDocs(q);
+                let logsHTML = '';
+                let count = 0;
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // ตรวจสอบว่าในข้อความ action มีรหัสขวดนี้รวมอยู่หรือไม่
+                    if (data.action.includes(bottleNo)) {
+                        count++;
+                        const dateObj = new Date(data.date);
+                        const dateStr = dateObj.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+                        
+                        let actionStyle = "text-slate-700";
+                        if(data.action.includes('เบิกใช้')) actionStyle = "text-orange-600 font-bold";
+                        else if(data.action.includes('เพิ่ม')) actionStyle = "text-green-600 font-bold";
+                        else if(data.action.includes('ลบ')) actionStyle = "text-red-600 font-bold";
+                        else if(data.action.includes('อัปเดต')) actionStyle = "text-amber-600 font-bold";
+
+                        logsHTML += `
+                            <tr class="hover:bg-slate-50 border-b border-slate-50">
+                                <td class="p-4 text-slate-500">${dateStr}</td>
+                                <td class="p-4 ${actionStyle}">${data.action}</td>
+                                <td class="p-4 text-sky-700 font-medium">${data.user}</td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                if (count > 0) {
+                    tbody.innerHTML = logsHTML;
+                } else {
+                    tbody.innerHTML = '';
+                    emptyState.classList.remove('hidden-view');
+                }
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center p-6 text-red-500">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>';
+            }
+        };
+
         // --- ระบบแสดงผล Public View สำหรับการสแกน QR Code ---
         const renderPublicDetails = (chem) => {
             const content = document.getElementById('public-detail-content');
@@ -867,6 +943,7 @@
                     
                     <!-- ส่วนของปุ่มสแกนถัดไปและเบิกใช้ -->
                     <div class="col-span-1 md:col-span-2 flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-slate-200">
+                        <button onclick="showBottleHistory('${chem.bottleNo}')" class="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition flex justify-center items-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติขวดนี้</button>
                         <button onclick="startScanner()" class="flex-1 py-3 bg-sky-100 hover:bg-sky-200 text-sky-700 font-bold rounded-xl transition flex justify-center items-center gap-2"><i class="fa-solid fa-qrcode"></i> สแกนขวดถัดไป</button>
                         <button onclick="loginToWithdraw('${chem.bottleNo}')" class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition flex justify-center items-center gap-2 shadow-lg shadow-orange-500/30"><i class="fa-solid fa-flask"></i> เข้าสู่ระบบเพื่อเบิกใช้</button>
                     </div>
@@ -1160,6 +1237,9 @@
             // ใส่ปุ่ม Edit / Delete ลงใน Footer ของ Modal
             const adminButtons = document.getElementById('admin-action-buttons');
             adminButtons.innerHTML = `
+                <button onclick="showBottleHistory('${chem.bottleNo}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition flex items-center gap-2 shadow text-sm">
+                    <i class="fa-solid fa-clock-rotate-left"></i> ประวัติขวดนี้
+                </button>
                 <button onclick="editChemical('${chem.bottleNo}')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition flex items-center gap-2 shadow text-sm">
                     <i class="fa-solid fa-pen-to-square"></i> แก้ไข
                 </button>
