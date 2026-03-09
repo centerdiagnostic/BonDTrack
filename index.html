@@ -216,6 +216,7 @@
                                 <option value="Harmful">Harmful</option>
                                 <option value="EnvironHazard">EnvironHazard</option>
                                 <option value="HealthHazard">HealthHazard</option>
+                                <option value="Non-Hazard">Non-Hazard</option>
                             </select>
                             <select id="filter-lab" onchange="renderTables()" class="flex-1 md:w-40 px-3 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none text-sm">
                                 <option value="">ทุก Lab</option>
@@ -329,7 +330,7 @@
                                         <option value="Harmful" class="text-amber-600 font-semibold">Harmful (อันตราย)</option>
                                         <option value="EnvironHazard" class="text-green-600 font-semibold">EnvironHazard (อันตรายต่อสิ่งแวดล้อม)</option>
                                         <option value="HealthHazard" class="text-rose-600 font-semibold">HealthHazard (อันตรายต่อสุขภาพ)</option>
-                                        <option value="None">ไม่มี</option>
+                                        <option value="Non-Hazard" class="text-slate-500 font-semibold">สารเคมีทั่วไป(Non-Hazard)</option>
                                     </select>
                                 </div>
                                 <div>
@@ -363,8 +364,23 @@
                     </div>
 
                     <!-- รายการสารเคมีจัดกลุ่มตามชื่อ -->
-                    <div id="withdraw-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                        <!-- Cards injected by JS -->
+                    <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead>
+                                    <tr class="bg-sky-50 border-b border-sky-100 text-sky-800 text-sm">
+                                        <th class="p-4 font-semibold">Chemical Name</th>
+                                        <th class="p-4 font-semibold">Lab</th>
+                                        <th class="p-4 font-semibold text-center">จำนวนขวดที่มี</th>
+                                        <th class="p-4 font-semibold text-right">ปริมาตรคงเหลือรวม</th>
+                                        <th class="p-4 font-semibold text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="withdraw-cards-container" class="divide-y divide-slate-100">
+                                    <!-- Cards injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Card ฟอร์มเบิก (โชว์เมื่อกดเลือกการ์ด) -->
@@ -606,6 +622,7 @@
         </div>
     </div>
 
+    <!-- 5. Modal: Bottle History -->
     <div id="modal-bottle-history" class="hidden-view fixed inset-0 bg-slate-900/80 z-[70] flex justify-center items-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden relative border-t-4 border-indigo-500">
             <div class="bg-white px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">
@@ -622,7 +639,8 @@
                         </tr>
                     </thead>
                     <tbody id="bottle-history-table-body" class="divide-y divide-slate-100 text-sm">
-                        </tbody>
+                        <!-- Rows injected by JS -->
+                    </tbody>
                 </table>
                 <div id="bottle-history-empty" class="hidden-view py-10 text-center text-slate-400">
                     <i class="fa-solid fa-folder-open text-3xl mb-2 opacity-50"></i><br>ไม่พบประวัติความเคลื่อนไหว
@@ -667,6 +685,8 @@
         const userNamesMap = {
             'aunzero2536@hotmail.com': 'ผู้ดูแลระบบ (Admin)',
             'aunzero1@hotmail.com': 'กฤษฎื์หิรัญ วรมหัทฐานนท์',
+            'chatnapa282536@gmail.com': 'ฉัตรนภา จันทร์มีเทศ',
+            'nongnidwww@gmail.com': 'น้องนิด เก้าลิ้ม',
         };
 
         const getUserDisplayName = (email) => {
@@ -741,10 +761,17 @@
             const map = {
                 'Flamable': 'text-red-500', 'Oxidizing': 'text-yellow-600', 'Explosive': 'text-orange-600',
                 'Corrosive': 'text-zinc-600', 'CompressGas': 'text-sky-500', 'Toxic': 'text-purple-600',
-                'Harmful': 'text-amber-500', 'EnvironHazard': 'text-green-500', 'HealthHazard': 'text-rose-500'
+                'Harmful': 'text-amber-500', 'EnvironHazard': 'text-green-500', 'HealthHazard': 'text-rose-500',
+                'Non-Hazard': 'text-slate-500', 'None': 'text-slate-500' /* รองรับข้อมูลเก่า */
             };
             return map[hazard] || 'text-slate-700';
         };
+
+        // ฟังก์ชัน Capitalize first letter
+        const capitalizeFirstLetter = (string) => {
+            if (!string) return string;
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
 
         const checkExpireStatus = (expDateStr) => {
             if(!expDateStr) return { text: '', class: 'text-slate-500' };
@@ -941,7 +968,6 @@
                     <div class="border-t border-slate-50 pt-3"><span class="text-slate-400 block text-xs font-medium">สถานที่จัดเก็บ (Location)</span> <span class="text-slate-800 font-medium block mt-1">${chem.location}</span></div>
                     ${imgHTML}
                     
-                    <!-- ส่วนของปุ่มสแกนถัดไปและเบิกใช้ -->
                     <div class="col-span-1 md:col-span-2 flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-slate-200">
                         <button onclick="showBottleHistory('${chem.bottleNo}')" class="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition flex justify-center items-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติขวดนี้</button>
                         <button onclick="startScanner()" class="flex-1 py-3 bg-sky-100 hover:bg-sky-200 text-sky-700 font-bold rounded-xl transition flex justify-center items-center gap-2"><i class="fa-solid fa-qrcode"></i> สแกนขวดถัดไป</button>
@@ -988,12 +1014,15 @@
                             document.getElementById('user-email-display').innerText = displayName; 
                             document.getElementById('user-avatar').innerText = displayName.charAt(0).toUpperCase();
                             
-                            if (user.metadata) {
-                                const createTime = new Date(user.metadata.creationTime).getTime();
-                                const lastSignIn = new Date(user.metadata.lastSignInTime).getTime();
-                                if (Math.abs(lastSignIn - createTime) < 5000) {
+                            // เช็คสถานะการเปลี่ยนรหัสผ่านผ่าน Firestore แทนการใช้เวลา
+                            try {
+                                const userStatusSnap = await getDoc(doc(db, 'users_status', user.uid));
+                                if (!userStatusSnap.exists()) {
+                                    // ถ้ายังไม่มี Document แปลว่ายังไม่เคยเข้าระบบและเปลี่ยนรหัส
                                     openModal('modal-pwd-change');
                                 }
+                            } catch (statusErr) {
+                                console.error("Error checking user status:", statusErr);
                             }
                             
                             loadChemicalsRealtime();
@@ -1049,6 +1078,40 @@
             .then(async (result) => { if (result.isConfirmed) await signOut(auth); });
         };
 
+        // --- Logic ฟอร์มเปลี่ยนรหัสผ่านครั้งแรก ---
+        document.getElementById('form-pwd-change').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPwd = document.getElementById('new-pwd').value;
+            const confirmPwd = document.getElementById('confirm-pwd').value;
+
+            if (newPwd !== confirmPwd) {
+                return Swal.fire('ข้อผิดพลาด', 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน', 'error');
+            }
+
+            if(currentUser) {
+                showLoading();
+                try {
+                    // อัปเดตรหัสผ่าน
+                    await updatePassword(currentUser, newPwd);
+                    
+                    // บันทึกสถานะลง Firestore ว่าเปลี่ยนรหัสผ่านแล้ว
+                    await setDoc(doc(db, 'users_status', currentUser.uid), { 
+                        email: currentUser.email, 
+                        passwordChanged: true, 
+                        changedAt: new Date().toISOString() 
+                    });
+
+                    hideLoading();
+                    closeModal('modal-pwd-change');
+                    document.getElementById('form-pwd-change').reset();
+                    Swal.fire('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success');
+                } catch (error) {
+                    hideLoading();
+                    Swal.fire('ข้อผิดพลาด', error.message, 'error');
+                }
+            }
+        });
+
         // เริ่มแอปพลิเคชัน
         initApp();
 
@@ -1059,7 +1122,13 @@
             onSnapshot(collection(db, 'chemicals'), (snapshot) => {
                 chemicalsData = [];
                 snapshot.forEach((doc) => chemicalsData.push({ id: doc.id, ...doc.data() }));
-                chemicalsData.sort((a, b) => new Date(b.receivedDate) - new Date(a.receivedDate));
+                
+                // เรียงลำดับจากรายการที่ถูกเพิ่มล่าสุดบนสุด (Newest First ตาม createdAt)
+                chemicalsData.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                    return dateB - dateA;
+                });
 
                 if(!document.getElementById('view-dashboard').classList.contains('hidden-view')) window.renderTables();
                 if(!document.getElementById('view-depleted').classList.contains('hidden-view')) window.renderTables();
@@ -1095,7 +1164,11 @@
             const labCounts = {};
 
             activeChems.forEach(c => {
-                hazardCounts[c.hazardRating] = (hazardCounts[c.hazardRating] || 0) + 1;
+                const hz = c.hazardRating || 'Non-Hazard';
+                // แปลงค่าเก่า None ให้เป็น Non-Hazard
+                const displayHz = hz === 'None' ? 'Non-Hazard' : hz;
+                hazardCounts[displayHz] = (hazardCounts[displayHz] || 0) + 1;
+                
                 const lab = c.lab || 'อื่นๆ / ไม่ระบุ';
                 labCounts[lab] = (labCounts[lab] || 0) + 1;
             });
@@ -1103,13 +1176,31 @@
             if(hazardChartInstance) hazardChartInstance.destroy();
             if(labChartInstance) labChartInstance.destroy();
 
+            // กำหนดสีให้ตรงกับค่า Hazard Rating
+            const hazardColorMap = {
+                'Flamable': '#ef4444',     // text-red-600
+                'Oxidizing': '#ca8a04',    // text-yellow-600
+                'Explosive': '#ea580c',    // text-orange-600
+                'Corrosive': '#52525b',    // text-zinc-600
+                'CompressGas': '#0284c7',  // text-sky-600
+                'Toxic': '#9333ea',        // text-purple-600
+                'Harmful': '#d97706',      // text-amber-600
+                'EnvironHazard': '#16a34a',// text-green-600
+                'HealthHazard': '#e11d48', // text-rose-600
+                'Non-Hazard': '#64748b'    // text-slate-500
+            };
+
+            const labelsHazard = Object.keys(hazardCounts);
+            const dataHazard = Object.values(hazardCounts);
+            const bgHazard = labelsHazard.map(label => hazardColorMap[label] || '#94a3b8');
+
             hazardChartInstance = new Chart(ctxHazard, {
                 type: 'pie',
                 data: {
-                    labels: Object.keys(hazardCounts),
+                    labels: labelsHazard,
                     datasets: [{
-                        data: Object.values(hazardCounts),
-                        backgroundColor: ['#ef4444', '#f59e0b', '#f97316', '#52525b', '#0ea5e9', '#a855f7', '#d97706', '#22c55e', '#f43f5e', '#94a3b8']
+                        data: dataHazard,
+                        backgroundColor: bgHazard
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10, family: 'Prompt' } } } } }
@@ -1145,7 +1236,13 @@
 
             chemicalsData.forEach(chem => {
                 const matchSearch = chem.name.toLowerCase().includes(searchVal) || chem.bottleNo.toLowerCase().includes(searchVal) || (chem.casNo && chem.casNo.toLowerCase().includes(searchVal));
-                const matchHazard = filterHazard === "" || chem.hazardRating === filterHazard;
+                
+                // รองรับข้อมูลเก่าที่เป็น None ให้ผ่าน filter ของ Non-Hazard
+                let chemHazardForFilter = chem.hazardRating;
+                if(filterHazard === "Non-Hazard" && chem.hazardRating === "None") {
+                    chemHazardForFilter = "Non-Hazard";
+                }
+                const matchHazard = filterHazard === "" || chemHazardForFilter === filterHazard;
                 const matchLab = filterLab === "" || chem.lab === filterLab;
 
                 if (matchSearch && matchHazard && matchLab) {
@@ -1276,7 +1373,8 @@
             document.getElementById('add-receivedDate').value = chem.receivedDate || '';
             document.getElementById('add-openedDate').value = chem.openedDate || '';
             document.getElementById('add-expiredDate').value = chem.expiredDate || '';
-            document.getElementById('add-hazard').value = chem.hazardRating || 'None';
+            // รองรับ None เป็น Non-Hazard
+            document.getElementById('add-hazard').value = chem.hazardRating === 'None' ? 'Non-Hazard' : (chem.hazardRating || 'Non-Hazard');
             
             imageBase64Data = chem.imageStr || "";
             
@@ -1366,7 +1464,8 @@
 
             const chemData = {
                 bottleNo: document.getElementById('add-bottleNo').value,
-                name: document.getElementById('add-name').value,
+                // แปลงตัวอักษรแรกให้เป็นพิมพ์ใหญ่เสมอ
+                name: capitalizeFirstLetter(document.getElementById('add-name').value),
                 casNo: document.getElementById('add-casNo').value,
                 catNo: document.getElementById('add-catNo').value,
                 supplier: document.getElementById('add-supplier').value,
@@ -1409,7 +1508,7 @@
             }
         });
 
-        // --- Withdraw System (แก้ไขให้ค้นหาได้ทั้งชื่อและรหัสขวด) ---
+        // --- Withdraw System (เปลี่ยนเป็น Table Layout) ---
         window.renderWithdrawCards = () => {
             const container = document.getElementById('withdraw-cards-container');
             const searchVal = document.getElementById('wd-search').value.toLowerCase();
@@ -1419,7 +1518,6 @@
             groupedChemicals = {}; 
 
             chemicalsData.forEach(chem => {
-                // อัปเดตบรรทัดนี้: ให้ค้นหาจากชื่อ หรือ จากรหัสขวดก็ได้
                 const matchSearch = chem.name.toLowerCase().includes(searchVal) || chem.bottleNo.toLowerCase().includes(searchVal);
                 const matchLab = labFilter === "" || chem.lab === labFilter;
                 
@@ -1434,27 +1532,31 @@
                 const labNames = [...new Set(items.map(i => i.lab))].join(', ');
                 const hzColor = getHazardColor(items[0].hazardRating);
 
-                const div = document.createElement('div');
-                div.className = "bg-white p-5 rounded-xl border border-sky-100 shadow-sm hover:shadow-md hover:border-orange-300 cursor-pointer transition flex flex-col justify-between";
-                div.onclick = () => openWithdrawAction(name);
-                div.innerHTML = `
-                    <div>
-                        <h4 class="font-bold text-lg ${hzColor} mb-1">${name}</h4>
-                        <p class="text-xs text-slate-500 mb-3"><i class="fa-solid fa-microscope text-sky-500 mr-1"></i> ${labNames || 'ไม่มี Lab'}</p>
-                    </div>
-                    <div class="flex justify-between items-end border-t border-slate-50 pt-3">
-                        <span class="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-1 rounded">มี ${items.length} ขวด</span>
-                        <div class="text-right">
-                            <span class="text-[10px] text-slate-400 block">คงเหลือรวม</span>
-                            <span class="font-bold text-orange-500 text-lg">${totalRemained.toFixed(2)} ${items[0].unit || ''}</span>
-                        </div>
-                    </div>
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition";
+                tr.innerHTML = `
+                    <td class="p-4">
+                        <div class="font-bold text-lg ${hzColor}">${name}</div>
+                    </td>
+                    <td class="p-4 text-sky-700 text-sm font-medium">${labNames || '-'}</td>
+                    <td class="p-4 text-center">
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold">${items.length} ขวด</span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <span class="font-bold text-orange-500 text-lg">${totalRemained.toFixed(2)}</span>
+                        <span class="text-xs text-slate-400 ml-1">${items[0].unit || ''}</span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <button onclick="openWithdrawAction('${name}')" class="bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white px-4 py-2 rounded-lg font-semibold transition text-sm flex items-center gap-2 mx-auto">
+                            <i class="fa-solid fa-flask"></i> เบิกใช้
+                        </button>
+                    </td>
                 `;
-                container.appendChild(div);
+                container.appendChild(tr);
             }
 
             if(Object.keys(groupedChemicals).length === 0) {
-                container.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400"><p>ไม่พบรายการที่สามารถเบิกได้</p></div>';
+                container.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">ไม่พบรายการที่สามารถเบิกได้</td></tr>';
             }
             
             document.getElementById('withdraw-action-area').classList.add('hidden-view');
