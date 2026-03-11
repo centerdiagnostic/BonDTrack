@@ -74,7 +74,7 @@
         <div class="hidden md:flex md:w-1/2 bg-sky-50 justify-center items-center flex-col p-10 relative overflow-hidden">
             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
             <div class="z-10 text-center flex flex-col items-center">
-                <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-48 mb-6 object-contain rounded-xl shadow-md border-2 border-white">
+                <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-48 mb-6 object-contain rounded-xl shadow-md border-2 border-white" onerror="this.src='https://placehold.co/200x200?text=BonDTrack';">
                 <h1 class="text-6xl font-bold tracking-tight mb-2 text-slate-800">Bon<span class="text-orange-500">DTrack</span></h1>
                 <p class="text-xl text-slate-500 font-light mt-4">Professional Lab Chemical Management System</p>
             </div>
@@ -84,7 +84,7 @@
         <div class="w-full md:w-1/2 flex justify-center items-center p-8 bg-white border-l border-slate-100">
             <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.05)] border border-slate-100">
                 <div class="md:hidden text-center mb-8 flex flex-col items-center">
-                    <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-32 mb-4 object-contain rounded-lg">
+                    <img src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="w-32 mb-4 object-contain rounded-lg" onerror="this.src='https://placehold.co/150x150?text=Logo';">
                     <h1 class="text-4xl font-bold tracking-tight text-slate-900">Bon<span class="text-orange-500">DTrack</span></h1>
                 </div>
                 <h2 class="text-2xl font-semibold mb-6 text-slate-800">เข้าสู่ระบบ</h2>
@@ -271,11 +271,12 @@
                                 <div><label class="block text-sm font-medium text-slate-700 mb-1">CAT No.</label><input type="text" id="add-catNo" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
                                 <div><label class="block text-sm font-medium text-slate-700 mb-1">Supplier / ผู้จัดจำหน่าย</label><input type="text" id="add-supplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Status (สถานะเริ่มแรก)</label>
-                                    <select id="add-status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
-                                        <option value="Available">Available (พร้อมใช้งาน)</option>
-                                        <option value="Low Stock">Low Stock (ใกล้หมด)</option>
-                                    </select>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                                    <input type="text" id="add-status" list="status-datalist" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="เลือกหรือพิมพ์สถานะ">
+                                    <datalist id="status-datalist">
+                                        <option value="Primary Standard">
+                                        <option value="Secondary Standard">
+                                    </datalist>
                                 </div>
                             </div>
 
@@ -428,6 +429,28 @@
                 <div id="view-history" class="view-section hidden-view">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">ประวัติการทำรายการ</h2>
                     <p class="text-sm text-slate-500 mb-6">ตรวจสอบประวัติการเพิ่ม แก้ไข ลบ และเบิกใช้งานสารเคมี</p>
+                    
+                    <!-- Filters for History -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-sky-100 mb-6 flex flex-col md:flex-row gap-3 items-end">
+                        <div class="flex-1 md:flex-none">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">ตั้งแต่วันที่</label>
+                            <input type="date" id="history-start-date" onchange="renderHistoryTable()" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none text-sm">
+                        </div>
+                        <div class="flex-1 md:flex-none">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">ถึงวันที่</label>
+                            <input type="date" id="history-end-date" onchange="renderHistoryTable()" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none text-sm">
+                        </div>
+                        <div class="flex-1 md:ml-auto w-full md:w-auto text-left md:text-right">
+                            <label class="block text-xs font-medium text-slate-500 mb-1 md:inline-block md:mr-2">แสดงจำนวนรายการ</label>
+                            <select id="history-page-size" onchange="renderHistoryTable()" class="w-full md:w-32 px-3 py-2 border border-slate-200 rounded-lg focus:border-orange-500 outline-none text-sm">
+                                <option value="10" selected>10 รายการ</option>
+                                <option value="20">20 รายการ</option>
+                                <option value="50">50 รายการ</option>
+                                <option value="100">100 รายการ</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden p-4">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse whitespace-nowrap">
@@ -592,7 +615,7 @@
             
             <div id="print-qr-section" class="bg-white p-6 border-4 border-slate-800 rounded-2xl flex flex-col items-center justify-center relative mx-auto my-2 w-[260px] shadow-sm">
                 <!-- โลโก้ด้านบนสุด -->
-                <img id="qr-logo-img" src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="h-10 mb-3 object-contain">
+                <img id="qr-logo-img" src="https://kvdc-vetku.com/wp-content/uploads/2026/02/1.png" alt="Logo" class="h-10 mb-3 object-contain" onerror="this.src='https://placehold.co/100x50?text=Logo';">
                 
                 <h3 class="font-bold text-lg mb-1 text-slate-900 text-center leading-tight w-full break-words" id="qr-chem-name">Chemical Name</h3>
                 <p class="text-sm text-slate-600 font-semibold mb-3" id="qr-chem-bottle">Bottle No: 000</p>
@@ -709,6 +732,7 @@
         let isEditing = false;
         let hazardChartInstance = null;
         let labChartInstance = null;
+        let systemLogsData = []; // เก็บข้อมูล logs ทั้งหมด
 
         // --- UI Utils ---
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden-view');
@@ -758,6 +782,7 @@
 
             if(viewId === 'dashboard' || viewId === 'depleted') window.renderTables();
             if(viewId === 'withdraw') renderWithdrawCards();
+            if(viewId === 'history' && typeof window.renderHistoryTable === 'function') window.renderHistoryTable();
         };
 
         const getHazardColor = (hazard) => {
@@ -848,28 +873,64 @@
                 snapshot.forEach(doc => logs.push(doc.data()));
                 
                 logs.sort((a, b) => new Date(b.date) - new Date(a.date));
-                const topLogs = logs.slice(0, 50);
+                systemLogsData = logs; // เก็บลง Global Variable
 
-                const tbody = document.getElementById('history-table-body');
-                tbody.innerHTML = '';
-                topLogs.forEach((data) => {
-                    const dateObj = new Date(data.date);
-                    const dateStr = dateObj.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-                    
-                    let actionStyle = "text-slate-700";
-                    if(data.action.includes('เบิกใช้')) actionStyle = "text-orange-600 font-bold";
-                    else if(data.action.includes('เพิ่ม')) actionStyle = "text-green-600 font-bold";
-                    else if(data.action.includes('ลบ')) actionStyle = "text-red-600 font-bold";
-                    else if(data.action.includes('อัปเดต')) actionStyle = "text-amber-600 font-bold";
+                // เรียกใช้ฟังก์ชัน render เพื่ออัปเดตตารางตาม Filter
+                if(!document.getElementById('view-history').classList.contains('hidden-view')){
+                    if(typeof window.renderHistoryTable === 'function') window.renderHistoryTable();
+                }
+            });
+        };
 
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-50 border-b border-slate-50">
-                            <td class="p-4 text-slate-500">${dateStr}</td>
-                            <td class="p-4 ${actionStyle}">${data.action}</td>
-                            <td class="p-4 text-sky-700 font-medium">${data.user}</td>
-                        </tr>
-                    `;
-                });
+        window.renderHistoryTable = () => {
+            const startDateVal = document.getElementById('history-start-date').value;
+            const endDateVal = document.getElementById('history-end-date').value;
+            const limitVal = parseInt(document.getElementById('history-page-size').value, 10);
+            
+            let filteredLogs = systemLogsData;
+
+            // กรองตามวันที่เริ่มต้น
+            if (startDateVal) {
+                const startDate = new Date(startDateVal);
+                startDate.setHours(0, 0, 0, 0);
+                filteredLogs = filteredLogs.filter(log => new Date(log.date) >= startDate);
+            }
+
+            // กรองตามวันที่สิ้นสุด
+            if (endDateVal) {
+                const endDate = new Date(endDateVal);
+                endDate.setHours(23, 59, 59, 999);
+                filteredLogs = filteredLogs.filter(log => new Date(log.date) <= endDate);
+            }
+
+            // ตัดข้อมูลตามจำนวนรายการต่อหน้า (Slice)
+            const displayLogs = filteredLogs.slice(0, limitVal);
+            
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+
+            if (displayLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center p-6 text-slate-500">ไม่พบประวัติการทำรายการในช่วงเวลาที่เลือก</td></tr>';
+                return;
+            }
+
+            displayLogs.forEach((data) => {
+                const dateObj = new Date(data.date);
+                const dateStr = dateObj.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+                
+                let actionStyle = "text-slate-700";
+                if(data.action.includes('เบิกใช้')) actionStyle = "text-orange-600 font-bold";
+                else if(data.action.includes('เพิ่ม')) actionStyle = "text-green-600 font-bold";
+                else if(data.action.includes('ลบ')) actionStyle = "text-red-600 font-bold";
+                else if(data.action.includes('อัปเดต')) actionStyle = "text-amber-600 font-bold";
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-50">
+                        <td class="p-4 text-slate-500">${dateStr}</td>
+                        <td class="p-4 ${actionStyle}">${data.action}</td>
+                        <td class="p-4 text-sky-700 font-medium">${data.user}</td>
+                    </tr>
+                `;
             });
         };
 
